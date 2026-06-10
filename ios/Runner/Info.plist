@@ -26,6 +26,14 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>TaskAI usa el micrófono para que puedas dictar tareas por voz.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>TaskAI transcribe tu voz en el dispositivo para crear tareas automáticamente.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>TaskAI usa la cámara para escanear texto (OCR) y crear tareas a partir de él.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>TaskAI accede a tus fotos para extraer texto (OCR) y crear tareas.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
