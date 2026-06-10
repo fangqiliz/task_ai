@@ -298,9 +298,7 @@ class HomeScreen extends StatelessWidget {
                 icon: Icons.auto_awesome,
                 label: 'IA',
                 active: false,
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Disponible en la v2.0')),
-                ),
+                onTap: () => context.push('/ai'),
               ),
               _NavItem(
                 icon: Icons.calendar_month_outlined,

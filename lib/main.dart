@@ -8,6 +8,7 @@ import 'screens/home_screen.dart';
 import 'screens/task_form_screen.dart';
 import 'screens/stats_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/ai_assistant_screen.dart';
 
 void main() {
   runApp(
@@ -31,6 +32,8 @@ final _router = GoRouter(
     GoRoute(path: '/stats', builder: (context, state) => const StatsScreen()),
     GoRoute(
         path: '/profile', builder: (context, state) => const ProfileScreen()),
+    GoRoute(
+        path: '/ai', builder: (context, state) => const AiAssistantScreen()),
   ],
 );
 

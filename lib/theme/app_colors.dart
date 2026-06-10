@@ -24,4 +24,28 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+
+  // Pantalla Asistente IA (mockup 03 · fondo oscuro)
+  static const Color violetLight = Color(0xFFA78BFA);
+  static const Color aiDarkTop = Color(0xFF0F0A2E);
+  static const Color aiDarkMid = Color(0xFF1A1147);
+  static const Color aiDarkBottom = Color(0xFF2D1B69);
+
+  static const LinearGradient aiBackgroundGradient = LinearGradient(
+    colors: [aiDarkTop, aiDarkMid, aiDarkBottom],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  static const LinearGradient voiceGradient = LinearGradient(
+    colors: [primary, pink],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient aiTitleGradient = LinearGradient(
+    colors: [primary, cyan, pink],
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+  );
 }
