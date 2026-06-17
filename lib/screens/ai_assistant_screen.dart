@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/task.dart';
 import '../providers/task_provider.dart';
@@ -132,9 +133,14 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
     if (text.isEmpty) return;
     _voiceTaskCreated = true;
 
+    final provider = context.read<TaskProvider>();
+    final userId = provider.userId;
+    if (userId == null) return;
+
     final parsed = TaskTextParser.parse(text);
-    context.read<TaskProvider>().addTask(Task(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
+    provider.addTask(Task(
+          id: const Uuid().v4(),
+          userId: userId,
           title: parsed.title,
           description: 'Creada por voz con TaskAI',
           category: parsed.category,
@@ -284,14 +290,17 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
 
   void _createTasksFromOcr(List<String> lines) {
     final provider = context.read<TaskProvider>();
-    final baseId = DateTime.now().millisecondsSinceEpoch;
+    final userId = provider.userId;
+    if (userId == null) return;
+
     final titles = <String>[];
 
     for (var i = 0; i < lines.length; i++) {
       final parsed = TaskTextParser.parse(lines[i]);
       titles.add(parsed.title);
       provider.addTask(Task(
-        id: '${baseId}_$i',
+        id: const Uuid().v4(),
+        userId: userId,
         title: parsed.title,
         description: 'Creada con escaneo OCR de TaskAI',
         category: parsed.category,

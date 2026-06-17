@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import '../providers/auth_provider.dart';
 import '../providers/task_provider.dart';
 import '../theme/app_colors.dart';
-
-const _userName = 'Tomás';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final tasks = context.watch<TaskProvider>().tasks;
+    final authProvider = context.watch<AuthProvider>();
+    final taskProvider = context.watch<TaskProvider>();
+    
+    final email = authProvider.currentUser?.email ?? 'Usuario';
+    final userName = email.split('@')[0];
+    final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
+
+    final tasks = taskProvider.tasks;
     final total = tasks.length;
     final completed = tasks.where((t) => t.isCompleted).length;
     final productivity = total == 0 ? 0 : ((completed / total) * 100).round();
@@ -21,16 +27,16 @@ class ProfileScreen extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          _buildHeader(context),
+          _buildHeader(context, userName, email, initial),
           _buildStatsRow(completed, productivity),
           const SizedBox(height: 16),
-          _buildSettingsList(context),
+          _buildSettingsList(context, authProvider, taskProvider),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, String userName, String email, String initial) {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(gradient: AppColors.profileGradient),
@@ -92,9 +98,9 @@ class ProfileScreen extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         alignment: Alignment.center,
-                        child: const Text(
-                          'T',
-                          style: TextStyle(
+                        child: Text(
+                          initial,
+                          style: const TextStyle(
                             fontSize: 36,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF92400E),
@@ -115,9 +121,9 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  const Text(
-                    _userName,
-                    style: TextStyle(
+                  Text(
+                    userName,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -125,7 +131,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '@${_userName.toLowerCase()} · Estudiante',
+                    email,
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 13,
@@ -188,7 +194,15 @@ class ProfileScreen extends StatelessWidget {
     return Container(width: 1, height: 36, color: const Color(0xFFE2E8F0));
   }
 
-  Widget _buildSettingsList(BuildContext context) {
+  Widget _buildSettingsList(
+    BuildContext context,
+    AuthProvider authProvider,
+    TaskProvider taskProvider,
+  ) {
+    final lastSyncStr = taskProvider.lastSyncAt != null
+        ? '${taskProvider.lastSyncAt!.hour}:${taskProvider.lastSyncAt!.minute.toString().padLeft(2, '0')}'
+        : 'Nunca';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -200,16 +214,27 @@ class ProfileScreen extends StatelessWidget {
             title: 'Sincronización en nube',
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(Icons.circle, size: 8, color: Color(0xFF10B981)),
-                SizedBox(width: 4),
-                Text('Conectado',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF10B981))),
-                SizedBox(width: 6),
-                Icon(Icons.chevron_right_rounded,
+              children: [
+                const Icon(Icons.circle, size: 8, color: Color(0xFF10B981)),
+                const SizedBox(width: 4),
+                Text(
+                  taskProvider.isSyncing ? 'Sincronizando...' : 'Conectado',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF10B981)),
+                ),
+                const SizedBox(width: 6),
+                const Icon(Icons.chevron_right_rounded,
                     color: Color(0xFFCBD5E1), size: 20),
               ],
             ),
+          ),
+          const SizedBox(height: 10),
+          _settingsTile(
+            icon: Icons.sync_rounded,
+            iconBg: const Color(0x1A00D4FF),
+            iconColor: AppColors.cyan,
+            title: 'Última sincronización',
+            subtitle: lastSyncStr,
+            onTap: () => taskProvider.syncTasks(),
           ),
           const SizedBox(height: 10),
           _settingsTile(
@@ -217,16 +242,43 @@ class ProfileScreen extends StatelessWidget {
             iconBg: const Color(0x1AEC4899),
             iconColor: AppColors.pink,
             title: 'Notificaciones',
-            subtitle: '8 notificaciones',
+            subtitle: 'Activadas',
           ),
           const SizedBox(height: 10),
           _settingsTile(
-            icon: Icons.category_outlined,
-            iconBg: const Color(0x1A00D4FF),
-            iconColor: AppColors.cyan,
-            title: 'Categorías personalizadas',
-            subtitle: '2 categorías',
+            icon: Icons.logout_rounded,
+            iconBg: const Color(0x1AEF4444),
+            iconColor: AppColors.alta,
+            title: 'Cerrar sesión',
+            subtitle: 'Desconectar cuenta de Supabase',
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('Cerrar sesión'),
+                  content: const Text('¿Estás seguro de que quieres cerrar tu sesión? Las tareas locales se guardarán en tu dispositivo.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('Cancelar'),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.pop(dialogContext);
+                        await authProvider.signOut();
+                        if (context.mounted) {
+                          context.go('/login');
+                        }
+                      },
+                      style: TextButton.styleFrom(foregroundColor: AppColors.alta),
+                      child: const Text('Cerrar sesión'),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -239,51 +291,55 @@ class ProfileScreen extends StatelessWidget {
     required String title,
     String? subtitle,
     Widget? trailing,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Color(0x0A000000), blurRadius: 6, offset: Offset(0, 2))
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(color: Color(0x0A000000), blurRadius: 6, offset: Offset(0, 2))
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
             ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF0F172A),
-                    )),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 2),
-                  Text(subtitle,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
                       style: const TextStyle(
-                          fontSize: 12, color: Color(0xFF94A3B8))),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF0F172A),
+                      )),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        style: const TextStyle(
+                            fontSize: 12, color: Color(0xFF94A3B8))),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          trailing ??
-              const Icon(Icons.chevron_right_rounded,
-                  color: Color(0xFFCBD5E1), size: 20),
-        ],
+            trailing ??
+                const Icon(Icons.chevron_right_rounded,
+                    color: Color(0xFFCBD5E1), size: 20),
+          ],
+        ),
       ),
     );
   }

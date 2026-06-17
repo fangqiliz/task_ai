@@ -3,9 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../models/task.dart';
 import '../providers/task_provider.dart';
+import '../providers/auth_provider.dart';
 import '../theme/app_colors.dart';
-
-const _userName = 'Tomás';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -13,7 +12,9 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TaskProvider>();
+    final authProvider = context.watch<AuthProvider>();
     final tasks = provider.filteredTasks;
+    final email = authProvider.currentUser?.email ?? 'Usuario';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -21,11 +22,17 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(context),
+            _buildHeader(context, email, provider.isSyncing),
             _buildProgressCard(provider.tasks),
             _buildCategoryFilters(context, provider),
             _buildSectionTitle(context, tasks),
-            Expanded(child: _buildTaskList(context, tasks, provider)),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: provider.syncTasks,
+                color: AppColors.primary,
+                child: _buildTaskList(context, tasks, provider),
+              ),
+            ),
           ],
         ),
       ),
@@ -34,7 +41,10 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, String email, bool isSyncing) {
+    final userName = email.split('@')[0];
+    final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
@@ -43,17 +53,37 @@ class HomeScreen extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Buenos días,',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: const Color(0xFF0F172A).withValues(alpha: 0.6),
-                ),
+              Row(
+                children: [
+                  Text(
+                    'Buenos días,',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.6),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  if (isSyncing)
+                    const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
+                      ),
+                    )
+                  else
+                    Icon(
+                      Icons.cloud_done_outlined,
+                      size: 14,
+                      color: const Color(0xFF10B981).withValues(alpha: 0.8),
+                    ),
+                ],
               ),
               const SizedBox(height: 2),
-              const Text(
-                '$_userName 👋',
-                style: TextStyle(
+              Text(
+                '$userName 👋',
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0F172A),
@@ -71,9 +101,9 @@ class HomeScreen extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: const Text(
-                'T',
-                style: TextStyle(
+              child: Text(
+                initial,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

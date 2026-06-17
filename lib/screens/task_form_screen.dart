@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart';
 import '../models/task.dart';
 import '../providers/task_provider.dart';
 import '../theme/app_colors.dart';
@@ -79,10 +80,19 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
     final provider = context.read<TaskProvider>();
     final editing = widget.task;
+    final userId = provider.userId;
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: No se encontró sesión de usuario')),
+      );
+      return;
+    }
 
     if (editing == null) {
       provider.addTask(Task(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: const Uuid().v4(),
+        userId: userId,
         title: title,
         description: _descriptionController.text.trim(),
         category: _category,
@@ -92,12 +102,14 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     } else {
       provider.updateTask(Task(
         id: editing.id,
+        userId: editing.userId,
         title: title,
         description: _descriptionController.text.trim(),
         category: _category,
         priority: _priority,
         dueDate: _dueDate,
         isCompleted: editing.isCompleted,
+        createdAt: editing.createdAt,
       ));
     }
 
